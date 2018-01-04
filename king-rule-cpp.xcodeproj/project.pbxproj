@@ -7,7 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		59D9EFF61FFDFB5E006DBCB2 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFF51FFDFB5E006DBCB2 /* main.cpp */; };
+		59D9F0081FFDFBEE006DBCB2 /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFD1FFDFBED006DBCB2 /* game.cpp */; };
+		59D9F0091FFDFBEE006DBCB2 /* position.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFE1FFDFBED006DBCB2 /* position.cpp */; };
+		59D9F00A1FFDFBEE006DBCB2 /* evaluate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFF1FFDFBED006DBCB2 /* evaluate.cpp */; };
+		59D9F00B1FFDFBEE006DBCB2 /* search.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9F0001FFDFBED006DBCB2 /* search.cpp */; };
+		59D9F00C1FFDFBEE006DBCB2 /* ptable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9F0021FFDFBED006DBCB2 /* ptable.cpp */; };
+		59D9F00D1FFDFBEE006DBCB2 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9F0031FFDFBED006DBCB2 /* main.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +29,18 @@
 
 /* Begin PBXFileReference section */
 		59D9EFF21FFDFB5E006DBCB2 /* king-rule-cpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "king-rule-cpp"; sourceTree = BUILT_PRODUCTS_DIR; };
-		59D9EFF51FFDFB5E006DBCB2 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		59D9EFFC1FFDFBED006DBCB2 /* game.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = game.hpp; path = "king-rule-cpp/game.hpp"; sourceTree = "<group>"; };
+		59D9EFFD1FFDFBED006DBCB2 /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = game.cpp; path = "king-rule-cpp/game.cpp"; sourceTree = "<group>"; };
+		59D9EFFE1FFDFBED006DBCB2 /* position.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = position.cpp; path = "king-rule-cpp/position.cpp"; sourceTree = "<group>"; };
+		59D9EFFF1FFDFBED006DBCB2 /* evaluate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = evaluate.cpp; path = "king-rule-cpp/evaluate.cpp"; sourceTree = "<group>"; };
+		59D9F0001FFDFBED006DBCB2 /* search.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = search.cpp; path = "king-rule-cpp/search.cpp"; sourceTree = "<group>"; };
+		59D9F0011FFDFBED006DBCB2 /* position.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = position.hpp; path = "king-rule-cpp/position.hpp"; sourceTree = "<group>"; };
+		59D9F0021FFDFBED006DBCB2 /* ptable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ptable.cpp; path = "king-rule-cpp/ptable.cpp"; sourceTree = "<group>"; };
+		59D9F0031FFDFBED006DBCB2 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = "king-rule-cpp/main.cpp"; sourceTree = "<group>"; };
+		59D9F0041FFDFBED006DBCB2 /* evaluate.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = evaluate.hpp; path = "king-rule-cpp/evaluate.hpp"; sourceTree = "<group>"; };
+		59D9F0051FFDFBED006DBCB2 /* ptable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ptable.hpp; path = "king-rule-cpp/ptable.hpp"; sourceTree = "<group>"; };
+		59D9F0061FFDFBEE006DBCB2 /* types.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = types.hpp; path = "king-rule-cpp/types.hpp"; sourceTree = "<group>"; };
+		59D9F0071FFDFBEE006DBCB2 /* search.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = search.hpp; path = "king-rule-cpp/search.hpp"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +57,18 @@
 		59D9EFE91FFDFB5E006DBCB2 = {
 			isa = PBXGroup;
 			children = (
+				59D9EFFF1FFDFBED006DBCB2 /* evaluate.cpp */,
+				59D9F0041FFDFBED006DBCB2 /* evaluate.hpp */,
+				59D9EFFD1FFDFBED006DBCB2 /* game.cpp */,
+				59D9EFFC1FFDFBED006DBCB2 /* game.hpp */,
+				59D9F0031FFDFBED006DBCB2 /* main.cpp */,
+				59D9EFFE1FFDFBED006DBCB2 /* position.cpp */,
+				59D9F0011FFDFBED006DBCB2 /* position.hpp */,
+				59D9F0021FFDFBED006DBCB2 /* ptable.cpp */,
+				59D9F0051FFDFBED006DBCB2 /* ptable.hpp */,
+				59D9F0001FFDFBED006DBCB2 /* search.cpp */,
+				59D9F0071FFDFBEE006DBCB2 /* search.hpp */,
+				59D9F0061FFDFBEE006DBCB2 /* types.hpp */,
 				59D9EFF41FFDFB5E006DBCB2 /* king-rule-cpp */,
 				59D9EFF31FFDFB5E006DBCB2 /* Products */,
 			);
@@ -57,7 +85,6 @@
 		59D9EFF41FFDFB5E006DBCB2 /* king-rule-cpp */ = {
 			isa = PBXGroup;
 			children = (
-				59D9EFF51FFDFB5E006DBCB2 /* main.cpp */,
 			);
 			path = "king-rule-cpp";
 			sourceTree = "<group>";
@@ -119,7 +146,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				59D9EFF61FFDFB5E006DBCB2 /* main.cpp in Sources */,
+				59D9F00C1FFDFBEE006DBCB2 /* ptable.cpp in Sources */,
+				59D9F00A1FFDFBEE006DBCB2 /* evaluate.cpp in Sources */,
+				59D9F00D1FFDFBEE006DBCB2 /* main.cpp in Sources */,
+				59D9F00B1FFDFBEE006DBCB2 /* search.cpp in Sources */,
+				59D9F0091FFDFBEE006DBCB2 /* position.cpp in Sources */,
+				59D9F0081FFDFBEE006DBCB2 /* game.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
