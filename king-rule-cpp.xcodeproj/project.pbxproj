@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		596521AF204E26D5001F90FA /* threads.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 596521AE204E26D5001F90FA /* threads.cpp */; };
 		59D9F0081FFDFBEE006DBCB2 /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFD1FFDFBED006DBCB2 /* game.cpp */; };
 		59D9F0091FFDFBEE006DBCB2 /* position.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFE1FFDFBED006DBCB2 /* position.cpp */; };
 		59D9F00A1FFDFBEE006DBCB2 /* evaluate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59D9EFFF1FFDFBED006DBCB2 /* evaluate.cpp */; };
@@ -28,6 +29,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		596521AC204DF3BE001F90FA /* graveyard.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = graveyard.txt; path = "king-rule-cpp/graveyard.txt"; sourceTree = "<group>"; };
+		596521AD204E26C0001F90FA /* threads.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = threads.hpp; path = "king-rule-cpp/threads.hpp"; sourceTree = "<group>"; };
+		596521AE204E26D5001F90FA /* threads.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = threads.cpp; path = "king-rule-cpp/threads.cpp"; sourceTree = "<group>"; };
 		59D9EFF21FFDFB5E006DBCB2 /* king-rule-cpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "king-rule-cpp"; sourceTree = BUILT_PRODUCTS_DIR; };
 		59D9EFFC1FFDFBED006DBCB2 /* game.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = game.hpp; path = "king-rule-cpp/game.hpp"; sourceTree = "<group>"; };
 		59D9EFFD1FFDFBED006DBCB2 /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = game.cpp; path = "king-rule-cpp/game.cpp"; sourceTree = "<group>"; };
@@ -57,6 +61,7 @@
 		59D9EFE91FFDFB5E006DBCB2 = {
 			isa = PBXGroup;
 			children = (
+				596521AC204DF3BE001F90FA /* graveyard.txt */,
 				59D9EFFF1FFDFBED006DBCB2 /* evaluate.cpp */,
 				59D9F0041FFDFBED006DBCB2 /* evaluate.hpp */,
 				59D9EFFD1FFDFBED006DBCB2 /* game.cpp */,
@@ -68,6 +73,8 @@
 				59D9F0051FFDFBED006DBCB2 /* ptable.hpp */,
 				59D9F0001FFDFBED006DBCB2 /* search.cpp */,
 				59D9F0071FFDFBEE006DBCB2 /* search.hpp */,
+				596521AD204E26C0001F90FA /* threads.hpp */,
+				596521AE204E26D5001F90FA /* threads.cpp */,
 				59D9F0061FFDFBEE006DBCB2 /* types.hpp */,
 				59D9EFF41FFDFB5E006DBCB2 /* king-rule-cpp */,
 				59D9EFF31FFDFB5E006DBCB2 /* Products */,
@@ -150,6 +157,7 @@
 				59D9F00A1FFDFBEE006DBCB2 /* evaluate.cpp in Sources */,
 				59D9F00D1FFDFBEE006DBCB2 /* main.cpp in Sources */,
 				59D9F00B1FFDFBEE006DBCB2 /* search.cpp in Sources */,
+				596521AF204E26D5001F90FA /* threads.cpp in Sources */,
 				59D9F0091FFDFBEE006DBCB2 /* position.cpp in Sources */,
 				59D9F0081FFDFBEE006DBCB2 /* game.cpp in Sources */,
 			);
@@ -264,7 +272,12 @@
 		59D9EFFA1FFDFB5E006DBCB2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUILD_VARIANTS = normal;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GCC_VERSION = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -272,7 +285,11 @@
 		59D9EFFB1FFDFB5E006DBCB2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUILD_VARIANTS = normal;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

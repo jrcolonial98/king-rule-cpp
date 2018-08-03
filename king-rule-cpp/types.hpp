@@ -65,34 +65,26 @@ TABLE OF CONTENTS
  Bit 31  2^30  1073741824
  Bit 32  2^31  2147483648
 */
-
-
 typedef short Eval;
-const Eval EVAL_MIN = -32768;
-const Eval EVAL_MAX = 32767;
-const Eval EVAL_INTERESTING = 200; //used for quiescence
-inline float Eval_to_decimal(Eval eval) {
-    return ((float)eval) / 100;
-}
-
 
 typedef bool Color;
 const Color WHITE = true, BLACK = false;
-
 
 enum Piece : char {
     WPAWN = 0, WBISHOP, WKNIGHT, WROOK, WQUEEN, WKING,
     BPAWN, BBISHOP, BKNIGHT, BROOK, BQUEEN, BKING,
     EMPTY
 };
-const Eval PIECE_VALUES[13] = {
+const short PIECE_VALUES[13] = {
     100, 300, 300, 500, 900, 0,
     -100, -300, -300, -500, -900, 0,
     0
 };
-inline Eval Piece_value(Piece p) {
+
+inline short Piece_value(Piece p) {
     return PIECE_VALUES[p];
 }
+
 inline bool Piece_is_pawn(Piece p) {
     return (p == WPAWN || p == BPAWN);
 }
@@ -158,6 +150,7 @@ const Square
     A7 = 48, B7 = 49, C7 = 50, D7 = 51, E7 = 52, F7 = 53, G7 = 54, H7 = 55,
     A8 = 56, B8 = 57, C8 = 58, D8 = 59, E8 = 60, F8 = 61, G8 = 62, H8 = 63,
     NOWHERE = 64;
+
 /*
 const char* SQUARE_TO_STRING[64] = {
     "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
@@ -169,7 +162,7 @@ const char* SQUARE_TO_STRING[64] = {
     "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8",
     "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8",
 };
- */
+*/
 const int
 A = 0, B = 1, C = 2, D = 3, E = 4, F = 5, G = 6, H = 7,
 ONE = 0, TWO = 1, THREE = 2, FOUR = 3, FIVE = 4, SIX = 5, SEVEN = 6, EIGHT = 7, NINE = 8;
@@ -194,14 +187,21 @@ typedef unsigned int Move;
 // [1-6: from square]
 const Move MOVE_CLEAR_SCORE = 32571391; // 1111100001111111111111111
 const Move MOVE_CLEAR_PIECE = 33492991; // 1111111110000111111111111
+const Move MOVE_NONE = 0;
 enum Score {
     SC_MINIMUM = 0, SC_NEG_CAPTURE, SC_NON_KILLER, SC_KILLER, SC_EQUAL_CAPTURE,
-    SC_POS_CAPTURE, SC_HASH, SC_PV
-    //THIS IS TOTALLY WRONG. KILLER MOVES CAUSE BETA CUTOFFS IN SIBLING NODES
-    //SO A POSITION MUST HOLD A COLLECTION OF KILLERS FROM ITS CHILDREND
-    //usually 2-3 of them. so a node checks its parent for killers.
-    //this can be done in Position.update()
+    SC_POS_CAPTURE, SC_HASH
+    //SC_MINIMUM - used for technical things, not an actual move score
+    //SC_NEG_CAPTURE - ie RxB
+    //SC_NON_KILLER - default score
+    //SC_KILLER - move caused a beta cutoff in a sibling node
+    //    killers are stored in the parent
+    //SC_EQUAL_CAPTURE - ie RxR
+    //SC_POS_CAPTURE - ie BxR
+    //SC_HASH - moves comes from TT data
 };
+const int SC_COUNT = SC_HASH; //number of items in the enum, not counting SC_MINIMUM
+
 inline Move Move_new(Square from, Square to) {
     return (Move)(from + (to << 6));
 }
@@ -262,11 +262,9 @@ inline void Move_set_checked(Move *m, bool checked) {
     if (checked) *m |= 16777216;
     else         *m &= (~(16777216));
 }
-
 inline bool Move_compare(Move m1, Move m2) {
     return (Move_from(m1) == Move_from(m2) && Move_to(m1) == Move_to(m2));
 }
-
 inline void Move_to_string(Move m) {
     std::cout << "Move from " << (int)Move_from(m) << " to " << (int)Move_to(m) << "\n";
 }

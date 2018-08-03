@@ -1,0 +1,62 @@
+Data type for move list type
+
+It must
+    -hold all moves of a position, up to 218
+    -be able to iterate thru all moves in order of score
+
+Move info gathered prior to search:
+    -neg exchange, neutral exchange, pos exchange
+    -killer, non-killer
+Move info gathered during search:
+    -position eval
+    -pv move (only one at a time)
+    -hash move (only one at a time, may be the same as pv)
+        -better than PV move only if pd.depth > search.depth, right?
+        -otherwise the same
+    IDEA: sort moves within killers and within non-killers, by eval?
+PV move
+    -updated at the end of alphabeta, at the end of the search loop
+Hash move
+    -updated at the end of search, therefore only applies upon transpositions
+
+IDEA: don't replace data in pos table unless depth > pd.depth OR hash is different
+
+NOTE: makes no speed difference to sort in Position vs to sort in Search
+
+Data type
+    -search-gathered info may change (pv, hash, evals)
+    -find_moves-gathered info will not change
+    -move_node
+        move
+        eval
+        score
+        move_node* next, previous
+    -move_node* first
+    -first = &pv, first.next = &hash, etc etc.
+    -move_node* current
+    -move_node* non-killers, killers, neg, neutral, pos
+
+    -get_next_move()
+    -add_move()
+    -set_eval(m, eval)
+
+
+Search algorithm
+    -if pv move exists, search pv move
+    -if hash move exists, search hash move
+        -some way of ordering pv and hash, one may be better than the other
+    -while true
+        move = moves.next()
+        if move == NULL break
+        if move == pv
+            continue
+        if move == hash
+            continue
+        search move
+
+
+public:
+    set_pv_move(m) (move from root of Position to Position.moves)
+    set_hash_move(m) (same)
+    get_best_move()
+    add_move(m)

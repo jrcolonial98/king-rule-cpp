@@ -10,7 +10,16 @@
 #define position_h
 
 #include "types.hpp"
-#include "ptable.hpp"
+
+extern int INIT_POS_HASH; //defined in position.cpp
+extern int INIT_PAWN_HASH; //defined in position.cpp
+extern Hash hash_values[781]; //defined in position.cpp
+    //one for each piece on each square, 12x64 (0-767)
+    //one for each side to move is white (768)
+    //four for castling rights (769-772)
+    //eight for en passant file (773-780)
+Hash get_xor(Piece p, Square s);
+void hash_values_init();
 
 const Square INIT_PIECES[32] = {
     E1, D1, H1, A1, G1, B1, F1, C1, A2, B2, C2, D2, E2, F2, G2, H2,
@@ -46,30 +55,55 @@ const Square BISHOP_DISP[4] = {DISP_NE, DISP_SE, DISP_SW, DISP_NW};
 const Square KNIGHT_DISP[8] = {DISP_NNE, DISP_SNE, DISP_NSE, DISP_SSE, DISP_SSW, DISP_NSW, DISP_SNW, DISP_NNW};
 const Square ROOK_DISP[4] = {DISP_N, DISP_E, DISP_S, DISP_W};
 
+class MoveList {
+public:
+    MoveList(); //how to create properly?
+    void add(Move move);
+    void set_best(Move move);
+    Move* next(); //get next move, in order from best to worst
+    void reset(); //reset iterator
+    void clear();
+    int size();
+private:
+    Move moves[SC_COUNT][256];
+    Move best;
+    //most possible moves in one position is 218
+    //256 is "more than enough" space, "just in case"
+    //one list for each type of move for faster adding/searching
+    //statically allocated, so memory isn't a problem
+    int count;
+    int new_move_index[SC_COUNT];
+    int iterator_index[SC_COUNT];
+    int interator_count; //number of moves iterated so far
+};
+
 class Position {
     
 public:
     Position();
     Position(Position const &p);
     
+    bool is_over(); //position is checkmate or stalemate
     int moves_since_cp;
     bool draw_offered;
-    int move_count;
-    
-    Move moves[256]; //need a better object for this (?)
-    int move_index;
-    
+    int move_count; //not number of moves possible, but number of moves made
     bool is_valid;
-    void set_pv_move(Move move); //make this for pointers?
+    void set_pv_move(Move move);
     Move get_pv_move();
-    double material_imbalance;
+    short material_imbalance;
     
     bool update(Move m); //returns whether subsequent pos is valid
+    bool update_next(Move m); //updates Position* next. assumes next is identical to this
     //TODO: every time update(m) is called, remember that it returns bool
     //void unmake_move(); //used for search, to save time cloning positions
+    void unmake_move();
+    
     void update(); //TODO: change design of this. Just calls find_moves()
+    
     bool move_is_valid(Move m); //can this move be made in this position?
-    bool is_over(); //position is checkmate or stalemate
+    Move* get_next_move();
+    void reset_move_iterator();
+    
     Hash get_pos_hash() const;
     Hash get_pawn_hash() const;
     
@@ -85,6 +119,10 @@ public:
     inline bool is_empty_or_enemy(Piece p);
     inline bool is_empty_or_enemy(Square s);
     
+    Position* get_next();
+    Position* get_previous();
+    void set_previous(Position* p);
+    
 private:
     PieceID board[64]; //piece on each square
     Square pieces[32]; //location of each piece
@@ -96,17 +134,19 @@ private:
     Hash pos_hash;
     Hash pawn_hash;
     
-    void find_moves();
+    MoveList moves;
+    
+    void find_moves(); 
     void add_move(Move m);
     
-    /* 
-    //MOVE UNMAKING DATA
-    Piece last_piece_taken;
+    //move unmaking data
+    PieceID last_piece_id_taken;
     Move last_move_made;
-     
-    */
     
-    Move pv_move;
+    Move pv_move; //points to an element of moves
+    
+    Position* next;
+    Position* previous;
     
 };
 
@@ -117,11 +157,12 @@ public:
     //no longer need to run find_moves() on Position
     //ensure there is no king on s
     void update(Move m);
-    Move get_smallest_attacker_move(); //return 0 if nothing
+    Move get_smallest_attacker_move(); //return MOVE_NONE if nothing
     //bool move_is_valid(Move m);
     PieceID piece_id_at(Square s);
-    Piece piece_at(Square s);
-    bool is_enemy(Square s);
+    Piece piece_at(Square s); //rename get_piece
+    //get_location
+    bool is_enemy(Square s); 
     bool is_empty(Square s);
     bool is_enemy(Piece p);
     Color side_to_move();

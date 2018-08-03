@@ -12,23 +12,42 @@
 #include "position.hpp"
 #include "types.hpp"
 #include "evaluate.hpp"
+#include "ptable.hpp"
+#include <pthread.h>
 
-//PUBLIC
-//finds a move at a given depth of search
-Move search(Position &p, Eval alpha, Eval beta, int depth);
+using namespace Evaluate;
+using namespace PTable;
 
+extern bool should_stop_searching;
 
-//PRIVATE
-//thse are called by search
+extern Position *ps;
+    //temporary, cannot create thread with function with parameter
+    //so search_master has no parameter
 
-//alphabeta() is the standard recursive search
-Eval alphabeta(Position &p, PosData *pd, Eval alpha, Eval beta, Move hash_move, int depth);
+class Search {
+public:
+    Search(Position *game_pos, int num_threads);
+    void start();
+    void stop();
+    Move get_pv_move();
+private:
+    void print_data(); //temporary
+    void join_all();
+    bool running = false;
+    Position* ps; 
+    Position* game_pos; //pointer to game's official position
+    int num_threads;
+    pthread_t *t; //array of threads
+    Position *root;
+};
 
-//alphabeta_leaf() is used at leaf nodes
-Eval alphabeta_leaf(Position &p, Eval alpha, Eval beta);
+static void* search_master(void* data);
+
+Eval search(Position &r, Eval alpha, Eval beta, int depth, int current_depth);
+Eval search_leaf(Position &r, Eval alpha, Eval beta);
 
 //see() looks at captures only and is used for the horizon effect
 //returns absolute Eval (not relative to side to move)
 Eval see(SeePosition sp, Square s);
 
-#endif /* search_hpp */
+#endif

@@ -8,25 +8,28 @@
 
 #include "game.hpp"
 
-void Game::start() {
-    pt_hash_values_init(); //random numbers used for position hash
+void Game::play() {
+    bool white = true;
     
-    //----------
-    /*
-    Move m = Move_new(1, 2);
-    Move_set_piece(&m, WKNIGHT);
-    Move_set_score(&m, SC_KILLER);
-    Move_set_checked(&m, false);
-    Move_set_is_promotion(&m, true);
-    Move_set_is_en_passant(&m, true);
-    std::cout << "Move from " << (int)Move_from(m) << " to " << (int)Move_to(m) << "\n";
-    std::cout << "Piece " << (int)Move_piece(m) << " Score " << (int)Move_score(m) << "\n";
-    std::cout << "Ch " << Move_checked(m) << " pro " << Move_is_promotion(m) << "\n";
-    std::cout << "ep " << Move_is_en_passant(m) << "\n";
-     */
-    //----------
+    while (true) {
+        bool human;
+        if (white) human = w_human;
+        else human = b_human;
+        
+        Move move;
+        do {
+            move = (human ? human_move() : comp_move());
+        } while (!p.move_is_valid(move));
+
+        Move_to_string(move);
+        p.update(move);
+        
+        if (p.is_over()) break;
+        
+        white = !white;
+    }
     
-    move(true);
+    end();
 }
 
 Move Game::human_move() {
@@ -49,30 +52,26 @@ Move Game::human_move() {
 }
 
 Move Game::comp_move() {
-    const int SEARCH_DEPTH = 5;
-    return search(p, EVAL_MIN, EVAL_MAX, SEARCH_DEPTH);
+    const int NUM_THREADS = 3; //temporary
+    Search s = Search(&p, NUM_THREADS);
+    s.start();
+    wait_for_search();
+    s.stop();
+    return s.get_pv_move();
 }
 
-void Game::move(bool white) {
-    Move move;
-    
-    bool human;
-    if (white) human = w_human;
-    else human = b_human;
-    
-    while (true) {
-        move = (human ? human_move() : comp_move());
-        if ( human && !p.move_is_valid(move) ) { //comp moves are always valid
-            std::cout << "Move is not valid.\n";
-            continue;
-        }
-        Move_to_string(move);
-        p.update(move);
-        break;
+void Game::wait_for_search() {
+    while (!should_stop_searching) {
+        //TODO: update user with search data
+       // if (!std::cin.eof()) {
+            char input;
+            std::cin >> input;
+            if (input == 's') {
+                std::cout <<"stopping...\n";
+                should_stop_searching = true;
+            }
+        //}
     }
-    
-    if (p.is_over()) end();
-    else this->move(!white);
 }
 
 void Game::end() {

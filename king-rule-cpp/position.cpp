@@ -8,6 +8,10 @@
 
 #include "position.hpp"
 
+int INIT_POS_HASH;
+int INIT_PAWN_HASH;
+Hash hash_values[781];
+
 Position::Position() {
     for (int i = 0; i < 32; i++) {
         pieces[i] = INIT_PIECES[i];
@@ -19,7 +23,6 @@ Position::Position() {
     moves_since_cp = 0;
     draw_offered = false;
     move_count = 0;
-    move_index = 0;
     is_valid = true;
     pv_move = 0;
     material_imbalance = 0;
@@ -30,6 +33,12 @@ Position::Position() {
     
     pos_hash = INIT_POS_HASH;
     pawn_hash = INIT_PAWN_HASH;
+    
+    next = NULL;
+    previous = NULL;
+    
+    last_piece_id_taken = EMPTYID;
+    last_move_made = MOVE_NONE;
     
     find_moves();
 }
@@ -42,17 +51,14 @@ Position::Position(Position const &p) {
         board[i] = p.board[i];
     }
     
-    for (int i = 0; i < p.move_index; i++) {
-        moves[i] = p.moves[i];
-    }
+    moves = MoveList(p.moves);
     
     moves_since_cp = p.moves_since_cp;
     draw_offered = p.draw_offered;
     move_count = p.move_count;
-    move_index = p.move_index;
     is_valid = p.is_valid;
-    //pv_move = p.pv_move; //not this - this is specific to the position
-    pv_move = 0;
+    //pv_move not copied - specific to the position
+    pv_move = NULL;
     material_imbalance = p.material_imbalance;
     
     w_OO = p.w_OO; w_OOO = p.w_OOO;
@@ -61,6 +67,8 @@ Position::Position(Position const &p) {
     
     pos_hash = p.get_pos_hash();
     pawn_hash = p.get_pawn_hash();
+    
+    next = NULL;
 }
 
 bool Position::update(Move m) {
@@ -73,15 +81,24 @@ bool Position::update(Move m) {
     PieceID captured_piece_id = board[to];
     Piece captured_piece = PieceID_to_Piece(captured_piece_id);
     
-    //TODO: threefold rep
+    //move unmaking
+    last_piece_id_taken = captured_piece_id;
+    last_move_made = m;
     
+    //draw data
+    //TODO: threefold rep
+    if (Piece_is_pawn(piece) || captured_piece != EMPTY) {
+        moves_since_cp = 0;
+    }
+    else {
+        moves_since_cp++;
+    }
     bool draw_claim_valid = false;
     if (moves_since_cp > 100) draw_claim_valid = true; //fifty move rule
     if (draw_offered) draw_claim_valid = true; //accept draw offer
     if (Move_includes_claim(m) && draw_claim_valid) {
         //end game with draw
     }
-    
     if (Move_includes_offer(m)) draw_offered = true;
     else draw_offered = false;
     
@@ -92,13 +109,13 @@ bool Position::update(Move m) {
         int dest_displacement = (side_to_move() ? 8 : -8);
         Square dest = (Square)(to + dest_displacement); //diagonal from capture
         
-        pos_hash ^= pt_get_xor(piece, from);
-        pos_hash ^= pt_get_xor(captured_piece, to);
-        pos_hash ^= pt_get_xor(piece, dest);
+        pos_hash ^= get_xor(piece, from);
+        pos_hash ^= get_xor(captured_piece, to);
+        pos_hash ^= get_xor(piece, dest);
         
-        pawn_hash ^= pt_get_xor(piece, from);
-        pawn_hash ^= pt_get_xor(piece, dest);
-        pawn_hash ^= pt_get_xor(captured_piece, to);
+        pawn_hash ^= get_xor(piece, from);
+        pawn_hash ^= get_xor(piece, dest);
+        pawn_hash ^= get_xor(captured_piece, to);
         
         pieces[board[from]] = dest;
         pieces[board[to]] = NOWHERE;
@@ -107,16 +124,16 @@ bool Position::update(Move m) {
         board[dest] = piece_id;
     }
     else {
-        pos_hash ^= pt_get_xor(piece, from);
-        pos_hash ^= pt_get_xor(piece, to);
-        pos_hash ^= pt_get_xor(captured_piece, to);
+        pos_hash ^= get_xor(piece, from);
+        pos_hash ^= get_xor(piece, to);
+        pos_hash ^= get_xor(captured_piece, to);
         
         if (Piece_is_pawn(piece)) {
-            pawn_hash ^= pt_get_xor(piece, from);
-            pawn_hash ^= pt_get_xor(piece, to);
+            pawn_hash ^= get_xor(piece, from);
+            pawn_hash ^= get_xor(piece, to);
         }
         if (Piece_is_pawn(piece_at(to))) {
-            pawn_hash ^= pt_get_xor(captured_piece, to);
+            pawn_hash ^= get_xor(captured_piece, to);
         }
         
         pieces[board[from]] = to;
@@ -134,16 +151,67 @@ bool Position::update(Move m) {
     //TODO: castling rights
     //consider how the data will be stored and handled. See position.h
     
-    if (Piece_is_pawn(piece) || captured_piece != EMPTY) {
-        moves_since_cp = 0;
-    }
-    
     move_count++;
     
     find_moves();
     
     
     return is_valid; //will be false if find_moves finds a king capture
+}
+bool Position::update_next(Move m) {
+    if (next == NULL) {
+        next = (Position*)malloc(sizeof(Position));
+        *next = Position(*this);
+        next->set_previous(this);
+    }
+    return next->update(m);
+}
+void Position::unmake_move() {
+    //assumed: previous != NULL
+    
+    Square from = Move_from(last_move_made);
+    Square to = Move_to(last_move_made);
+    Piece last_piece_taken = PieceID_to_Piece(last_piece_id_taken);
+    
+    //threefold rep, draw bools
+    moves_since_cp = previous->moves_since_cp;
+    draw_offered = previous->draw_offered;
+    
+    //material_imbalance
+    material_imbalance += Piece_value(last_piece_taken);
+    
+    //update board and hash data
+    pos_hash = previous->get_pos_hash();
+    pawn_hash = previous->get_pawn_hash();
+    if (Move_is_en_passant(last_move_made)) {
+        int y = (Square_y(from) == FIVE ? SIX : THREE);
+        Square dest = Square_new(Square_x(to), y);
+        pieces[board[dest]] = from; //piece is at from
+        board[from] = board[dest]; //from has the piece at dest
+        board[dest] = EMPTYID;
+        board[to] = last_piece_id_taken;
+        pieces[board[to]] = to;
+    }
+    else {
+        pieces[board[to]] = from;
+        pieces[last_piece_id_taken] = to;
+        board[from] = board[to];
+        board[to] = last_piece_id_taken;
+    }
+    
+    //(re)set en passant
+    en_passant_file = previous->en_passant_file;
+    
+    //castling rights
+    
+    //move count
+    move_count--;
+    
+    //NOTE: find_moves() not called
+    
+    //reset unmaking data
+    last_move_made = MOVE_NONE;
+    last_piece_taken = EMPTY;
 }
 
 bool Position::move_is_valid(Move m) { //TODO
@@ -152,6 +220,13 @@ bool Position::move_is_valid(Move m) { //TODO
 
 bool Position::is_over() { //TODO
     return false;
+}
+
+Move* Position::get_next_move() {
+    return moves.next();
+}
+void Position::reset_move_iterator() {
+    moves.reset();
 }
 
 Hash Position::get_pos_hash() const {
@@ -205,9 +280,7 @@ inline bool Position::is_empty_or_enemy(Square s) {
 }
 
 void Position::find_moves() {
-    //most possible moves in one position is 218
-    
-    move_index = 0;
+    moves.clear();
     
     Square from, to;
     PieceID piece_id;
@@ -348,10 +421,6 @@ void Position::find_moves() {
                 start = SEVEN;
             }
             
-            bool promotion = false; //TODO: add this to the move
-            if (y == (side_to_move() ? SEVEN : TWO))
-                promotion = true;
-            
             //move forward 1
             to = from + disp_1;
             if (is_empty(to)) add_move(Move_new(from, to));
@@ -413,16 +482,27 @@ void Position::add_move(Move m) {
     Move_set_piece(&m, piece);
     Move_set_score(&m, score);
     
-    moves[move_index] = m;
-    move_index++;
+    moves.add(m);
 }
 
 void Position::set_pv_move(Move move) {
+    std::cout<<"set\n";
     pv_move = move;
+    moves.set_best(move);
 }
 
 Move Position::get_pv_move() {
     return pv_move;
+}
+
+Position* Position::get_next() {
+    return next;
+}
+Position* Position::get_previous() {
+    return previous;
+}
+void Position::set_previous(Position *p) {
+    previous = p;
 }
 
 SeePosition::SeePosition(Position &p, Square s) {
@@ -620,10 +700,10 @@ void SeePosition::update(Move m) {
 }
 
 Move SeePosition::get_smallest_attacker_move() {
-    Move move = 0;
+    Move move = MOVE_NONE;
     
     Color side_to_move = (move_count % 2 == 0 ? WHITE : BLACK);
-    Eval min_value = EVAL_MAX;
+    Eval min_value = 32767; //max value for a short
     for (int i = 0; i < move_index; i++) {
         if (immediately_attacking_squares[i] == NOWHERE) continue;
         Piece p = PieceID_to_Piece(board[immediately_attacking_squares[i]]);
@@ -678,3 +758,109 @@ void SeePosition::add_move(Square from) {
     move_index++;
 }
 
+MoveList::MoveList() {
+    clear();
+}
+
+void MoveList::add(Move move) {
+    int i = Move_score(move) - 1;
+    moves[i][new_move_index[i]] = move;
+    (new_move_index[i])++;
+    count++;
+}
+void MoveList::set_best(Move move) {
+    best = move;
+}
+Move* MoveList::next() { //gets next best move
+    interator_count++;
+    if (interator_count == 1) return &best;
+    for (int i = SC_COUNT - 1; i >= 0; i--) {
+        if (iterator_index[i] < new_move_index[i]) {
+            Move* next_move = &(moves[i][iterator_index[i]]);
+            (iterator_index[i])++;
+            return (Move_compare(*next_move, best) ? next() : next_move); //don't return best twice
+        }
+    }
+    return NULL;
+}
+void MoveList::reset() {
+    interator_count = 0;
+    for (int i = 0; i < SC_COUNT; i++) {
+        iterator_index[i] = 0;
+    }
+}
+void MoveList::clear() {
+    reset();
+    count = 0;
+    for (int i = 0; i < SC_COUNT; i++) {
+        new_move_index[i] = 0;
+    }
+}
+int MoveList::size() {
+    return count;
+}
+
+void hash_values_init() {
+    srand((int)time(NULL));
+    for (int i = 0; i < 781; i++) {
+        hash_values[i] = (Hash)rand();
+    }
+    
+    INIT_POS_HASH = 0;
+    INIT_POS_HASH ^= get_xor(WROOK, A1);
+    INIT_POS_HASH ^= get_xor(WKNIGHT, B1);
+    INIT_POS_HASH ^= get_xor(WBISHOP, C1);
+    INIT_POS_HASH ^= get_xor(WQUEEN, C1);
+    INIT_POS_HASH ^= get_xor(WKING, E1);
+    INIT_POS_HASH ^= get_xor(WBISHOP, F1);
+    INIT_POS_HASH ^= get_xor(WKNIGHT, G1);
+    INIT_POS_HASH ^= get_xor(WROOK, H1);
+    INIT_POS_HASH ^= get_xor(WPAWN, A2);
+    INIT_POS_HASH ^= get_xor(WPAWN, B2);
+    INIT_POS_HASH ^= get_xor(WPAWN, C2);
+    INIT_POS_HASH ^= get_xor(WPAWN, D2);
+    INIT_POS_HASH ^= get_xor(WPAWN, E2);
+    INIT_POS_HASH ^= get_xor(WPAWN, F2);
+    INIT_POS_HASH ^= get_xor(WPAWN, G2);
+    INIT_POS_HASH ^= get_xor(WPAWN, H2);
+    INIT_POS_HASH ^= get_xor(BPAWN, A7);
+    INIT_POS_HASH ^= get_xor(BPAWN, B7);
+    INIT_POS_HASH ^= get_xor(BPAWN, C7);
+    INIT_POS_HASH ^= get_xor(BPAWN, D7);
+    INIT_POS_HASH ^= get_xor(BPAWN, E7);
+    INIT_POS_HASH ^= get_xor(BPAWN, F7);
+    INIT_POS_HASH ^= get_xor(BPAWN, G7);
+    INIT_POS_HASH ^= get_xor(BPAWN, H7);
+    INIT_POS_HASH ^= get_xor(BROOK, A8);
+    INIT_POS_HASH ^= get_xor(BKNIGHT, B8);
+    INIT_POS_HASH ^= get_xor(BBISHOP, C8);
+    INIT_POS_HASH ^= get_xor(BQUEEN, D8);
+    INIT_POS_HASH ^= get_xor(BKING, E8);
+    INIT_POS_HASH ^= get_xor(BBISHOP, F8);
+    INIT_POS_HASH ^= get_xor(BKNIGHT, G8);
+    INIT_POS_HASH ^= get_xor(BROOK, H8);
+    
+    INIT_PAWN_HASH = 0;
+    INIT_PAWN_HASH ^= get_xor(WPAWN, A2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, B2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, C2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, D2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, E2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, F2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, G2);
+    INIT_PAWN_HASH ^= get_xor(WPAWN, H2);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, A7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, B7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, C7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, D7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, E7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, F7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, G7);
+    INIT_PAWN_HASH ^= get_xor(BPAWN, H7);
+}
+
+Hash get_xor(Piece p, Square s) {
+    if (p == EMPTY) return 0;
+    int index = p * 64 + s;
+    return hash_values[index];
+}

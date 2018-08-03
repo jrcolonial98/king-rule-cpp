@@ -8,19 +8,22 @@
 
 #include "evaluate.hpp"
 
-Eval evaluate(Position &p) {
-    
+using namespace Evaluate;
+using namespace PTable;
+
+Eval Evaluate::evaluate(Position &p) {
+        
     Eval eval;
     
-    eval = p.material_imbalance;
+    eval = p.material_imbalance; //get/set
     
     //load up king shield and files
     
     //look up pawn structure
-    PawnData *pd = pt_pawn_get(p.get_pawn_hash());
+    PawnData pd;
 
     //entry either is empty or contains a different pos
-    if (pd == NULL) {
+    if (!pt_pawn_get(&pd, p.get_pawn_hash())) {
         unsigned int backwards_squares[2] = {4294967295, 4294967295};
         //one int per color, one bit per square, ranks 3-6, initialized to "all squares are backwards"
         char files_occupied[2] = {0, 0};
@@ -86,47 +89,41 @@ Eval evaluate(Position &p) {
                                     set_square_backwards(bs, (Square)(s - 1), false);
                                 }
                             }
-                            
                         }
-                        
                     }
                 }
-                
                 //TODO: apply penalty for doubled, tripled, etc
             }
-            
             //TODO: apply penalties for island count, isolated
         }
         
         PawnData pd_new;
         
-        pd_new.files_occupied[0] = files_occupied[0];
-        pd_new.files_occupied[1] = files_occupied[1];
-        pd_new.backwards_squares[0] = backwards_squares[0];
-        pd_new.backwards_squares[1] = backwards_squares[1];
-        pd_new.eval = eval; //this must be dependent on pawn structure, not "eval"
-        pd_new.hash = p.get_pawn_hash();
+        pd.files_occupied[0] = files_occupied[0];
+        pd.files_occupied[1] = files_occupied[1];
+        pd.backwards_squares[0] = backwards_squares[0];
+        pd.backwards_squares[1] = backwards_squares[1];
+        pd.eval = eval; //this must be dependent on pawn structure, not "eval"
+        pd.hash = p.get_pawn_hash();
         
-        pt_pawn_insert(p.get_pawn_hash(), pd_new);
-        
-        pd = pt_pawn_get(p.get_pawn_hash());
+        pt_pawn_insert(p.get_pawn_hash(), &pd_new);
     }
     
-    eval += pd->eval;
-     
+    eval += pd.eval;
+    
     
     //GO THRU PIECES, USING PD.BACKWARDS_SQUARES AND PD.FILES_OCCUPIED
-    char* fo_friendly = pd->files_occupied;
-    char* fo_enemy = pd->files_occupied + 1;
-    unsigned int* bs_friendly = pd->backwards_squares;
-    unsigned int* bs_enemy = pd->backwards_squares + 1;
+    char* fo_friendly = pd.files_occupied;
+    char* fo_enemy = pd.files_occupied + 1;
+    unsigned int* bs_friendly = pd.backwards_squares;
+    unsigned int* bs_enemy = pd.backwards_squares + 1;
     int increment = 1;
     for (int j = 0; j < 32; j++) {
         if (j == 16) { //switch to black data
-            fo_friendly = pd->files_occupied + 1;
-            fo_enemy = pd->files_occupied;
-            bs_friendly = pd->backwards_squares + 1;
-            bs_enemy = pd->backwards_squares;
+            fo_friendly = pd.files_occupied + 1;
+            fo_enemy = pd.files_occupied;
+            bs_friendly = pd.backwards_squares + 1;
+            bs_enemy = pd.backwards_squares;
             increment = -1;
         }
         
@@ -180,23 +177,37 @@ Eval evaluate(Position &p) {
     else return -eval;
 }
 
-inline void apply_bonus(Eval* eval, Eval bonus) {
+inline void Evaluate::apply_bonus(Eval* eval, Eval bonus) {
     *eval += bonus;
 }
 
-inline void set_file_occupied(char* data, int file, bool occupied) {
-    *data = (occupied ? *data | OCCUPIED_FILES[file] : *data ^ OCCUPIED_FILES[file]);
+inline void Evaluate::set_file_occupied
+(char* data, int file, bool occupied) {
+    if (occupied) {
+        *data |= OCCUPIED_FILES[file];
+    }
+    else {
+        *data ^= OCCUPIED_FILES[file];
+    }
 }
-inline void set_square_backwards(unsigned int* data, Square square, bool backwards) {
+inline void Evaluate::set_square_backwards
+(unsigned int* data, Square square, bool backwards) {
     int s = square - 16; //realign it since a3 is now 0 not 16
-    *data = (backwards ? *data | BACKWARDS_SQUARES[s] : *data ^ BACKWARDS_SQUARES[s]);
+    
+    if (backwards) {
+        *data |= BACKWARDS_SQUARES[s];
+    }
+    else {
+        *data ^= BACKWARDS_SQUARES[s];
+    }
 }
 
-inline bool get_file_occupied(char* data, int file) {
+inline bool Evaluate::get_file_occupied(char* data, int file) {
     if (file < A || file > H) return false;
     return *data & OCCUPIED_FILES[file];
 }
-inline bool get_square_backwards(unsigned int* data, Square square) {
+inline  bool Evaluate::get_square_backwards
+(unsigned int* data, Square square) {
     if (square < A1 || square > H4) return false;
     return *data & BACKWARDS_SQUARES[square - 16];
 }

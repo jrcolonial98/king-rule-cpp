@@ -7,23 +7,16 @@
 //
 
 #include "game.hpp"
+#include "ptable.hpp"
 
 int main(int argc, const char * argv[]) {
     using namespace std;
     
     cout << "KingRule C++ Indev\nLoading...\n";
     
-    pt_pos_init();
-    pt_pawn_init();
+    PTable::init(); //init pawn_table and pos_table
+    hash_values_init(); //init random ints used for hashes
     
-    /*
-    if (argc != 3
-        || (*argv[1] != 'h' && *argv[1] != 'c')
-        || (*argv[2] != 'h' && *argv[2] != 'c')) {
-        cout << "Two args, one for white, one for black. 'h' for human, 'c' for computer.\n";
-        return 1;
-    }
-     */
     char white, black;
     cout << "White is? (h for human, c for computer)\n";
     cin >> white;
@@ -31,9 +24,8 @@ int main(int argc, const char * argv[]) {
     cin >> black;
     
     
-    //Game g(*argv[0] == 'h', *argv[1] == 'h');
     Game g(white == 'h', black == 'h');
-    g.start();
+    g.play();
     
     return 0;
 }

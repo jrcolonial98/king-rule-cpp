@@ -8,115 +8,87 @@
 
 #include "ptable.hpp"
 
-Hash hash_values[781];
+using namespace PTable;
+using namespace std;
 
-PawnData *pawn_table;
-PosData *pos_table;
+std::atomic<PosData>* PTable::pos_table;
+std::atomic<PawnData>* PTable::pawn_table;
+//std::mutex PTable::pos_mtx[PT_POS_SIZE];
+//std::mutex PTable::pawn_mtx[PT_PAWN_SIZE];
 
-int INIT_POS_HASH;
-int INIT_PAWN_HASH;
-
-void pt_pos_init() {
-    pos_table = (PosData*)malloc(sizeof(PosData) * PT_POS_SIZE);
-}
-void pt_pos_insert(Hash hash, PosData data) {
-    int address = pt_pos_hash_to_address(hash);
-    pos_table[address] = data;
-}
-
-PosData* pt_pos_get(Hash hash) {
-    int address = pt_pos_hash_to_address(hash);
-    PosData *pd = &(pos_table[address]);
-    if (pd->hash != hash) return NULL;
-    return pd;
-}
-int pt_pos_hash_to_address(Hash hash) {
-    return (hash % PT_POS_SIZE);
-}
-
-void pt_pawn_init() {
-    pawn_table = (PawnData*)malloc(sizeof(PawnData) * PT_PAWN_SIZE);
-}
-void pt_pawn_insert(Hash hash, PawnData data) {
-    int address = pt_pawn_hash_to_address(hash);
-    pawn_table[address] = data;
-}
-
-PawnData* pt_pawn_get(Hash hash) {
-    int address = pt_pawn_hash_to_address(hash);
-    PawnData *pd = &(pawn_table[address]);
-    if (pd->hash != hash) return NULL;
-    return pd;
-}
-int pt_pawn_hash_to_address(Hash hash) {
-    return (hash % PT_PAWN_SIZE);
-}
-void pt_pawn_reset() {
-    free(pawn_table);
+void PTable::init() {
+    pt_pos_init();
     pt_pawn_init();
 }
 
-Hash pt_get_xor(Piece p, Square s) {
-    if (p == EMPTY) return 0;
-    int index = p * 64 + s;
-    return hash_values[index];
+void PTable::pt_pos_init() {
+    pos_table = (atomic<PosData>*)malloc(sizeof(atomic<PosData>) * PT_POS_SIZE);
+}
+void PTable::pt_pos_insert(Hash hash, PosData *data) {
+    int address = pt_pos_hash_to_address(hash);
+    
+    //pos_table[address].mtx.lock();
+    //pos_mtx[address].lock();
+    //std::memcpy(pos_table + address, data, sizeof(PosData));
+    pos_table[address].store(*data);
+    //pos_mtx[address].unlock();
+    //pos_table[address].mtx.unlock();
+    //because PosData has a mtx in it, you can't copy using '=' operator
 }
 
-void pt_hash_values_init() {
-    srand((int)time(NULL));
-    for (int i = 0; i < 781; i++) {
-        hash_values[i] = (Hash)rand();
+bool PTable::pt_pos_get(PosData *pd, Hash hash) {
+    int address = pt_pos_hash_to_address(hash);
+    //PosData *data = &(pos_table[address]);
+    PosData data = pos_table[address].load();
+    if (pd->hash != hash) {
+        return false;
     }
-    
-    INIT_POS_HASH = 0;
-    INIT_POS_HASH ^= pt_get_xor(WROOK, A1);
-    INIT_POS_HASH ^= pt_get_xor(WKNIGHT, B1);
-    INIT_POS_HASH ^= pt_get_xor(WBISHOP, C1);
-    INIT_POS_HASH ^= pt_get_xor(WQUEEN, C1);
-    INIT_POS_HASH ^= pt_get_xor(WKING, E1);
-    INIT_POS_HASH ^= pt_get_xor(WBISHOP, F1);
-    INIT_POS_HASH ^= pt_get_xor(WKNIGHT, G1);
-    INIT_POS_HASH ^= pt_get_xor(WROOK, H1);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, A2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, B2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, C2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, D2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, E2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, F2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, G2);
-    INIT_POS_HASH ^= pt_get_xor(WPAWN, H2);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, A7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, B7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, C7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, D7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, E7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, F7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, G7);
-    INIT_POS_HASH ^= pt_get_xor(BPAWN, H7);
-    INIT_POS_HASH ^= pt_get_xor(BROOK, A8);
-    INIT_POS_HASH ^= pt_get_xor(BKNIGHT, B8);
-    INIT_POS_HASH ^= pt_get_xor(BBISHOP, C8);
-    INIT_POS_HASH ^= pt_get_xor(BQUEEN, D8);
-    INIT_POS_HASH ^= pt_get_xor(BKING, E8);
-    INIT_POS_HASH ^= pt_get_xor(BBISHOP, F8);
-    INIT_POS_HASH ^= pt_get_xor(BKNIGHT, G8);
-    INIT_POS_HASH ^= pt_get_xor(BROOK, H8);
-    
-    INIT_PAWN_HASH = 0;
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, A2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, B2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, C2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, D2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, E2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, F2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, G2);
-    INIT_PAWN_HASH ^= pt_get_xor(WPAWN, H2);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, A7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, B7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, C7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, D7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, E7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, F7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, G7);
-    INIT_PAWN_HASH ^= pt_get_xor(BPAWN, H7);
+    //data->mtx.lock();
+    //pos_mtx[address].lock();
+    //std::memcpy(pd, data, sizeof(PosData));
+    //pos_mtx[address].unlock();
+    //data->mtx.unlock();
+    return true;
+}
+int PTable::pt_pos_hash_to_address(Hash hash) {
+    return (hash % PT_POS_SIZE);
+}
+
+void PTable::pt_pawn_init() {
+    pawn_table = (atomic<PawnData>*)malloc(sizeof(atomic<PawnData>) * PT_PAWN_SIZE);
+}
+void PTable::pt_pawn_insert(Hash hash, PawnData *data) {
+    int address = pt_pawn_hash_to_address(hash);
+    //pawn_table[address].mtx.lock();
+    //pawn_mtx[address].lock();
+    //std::memcpy(pawn_table + address, data, sizeof(PawnData));
+    pawn_table[address].store(*data);
+    //pawn_mtx[address].unlock();
+    //pawn_table[address].mtx.unlock();
+}
+
+bool PTable::pt_pawn_get(PawnData *pd, Hash hash) {
+    int address = pt_pawn_hash_to_address(hash);
+    //PawnData *data = &(pawn_table[address]);
+    PawnData data = pawn_table[address].load();
+    if (pd->hash != hash) {
+        return NULL;
+    }
+    //data->mtx.lock();
+    //pawn_mtx[address].lock();
+    //std::memcpy(pd, data, sizeof(PawnData));
+    //pawn_mtx[address].unlock();
+    //data->mtx.unlock();
+    return pd;
+}
+int PTable::pt_pawn_hash_to_address(Hash hash) {
+    return (hash % PT_PAWN_SIZE);
+}
+void PTable::pt_pawn_reset() {
+    free(pawn_table);
+    pt_pawn_init();
+}
+void PTable::pt_pos_reset() {
+    free(pos_table);
+    pt_pos_init();
 }
